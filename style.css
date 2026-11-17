@@ -5,7 +5,7 @@ body {
     height: 100vh;
     color: #172b4d;
     background-color: #f4f5f7;
-    overflow: hidden; /* O body NUNCA scrolla. Tudo acontece nos painéis. */
+    overflow: hidden;
 }
 
 /* Sidebar */
@@ -19,7 +19,7 @@ body {
     flex-direction: column;
     gap: 16px;
     box-shadow: 2px 0 8px rgba(9, 30, 66, 0.04);
-    z-index: 20;
+    z-index: 30; /* Fica acima de tudo */
 }
 
 .sidebar-header h2 { margin: 0 0 4px 0; font-size: 18px; color: #172b4d; }
@@ -70,19 +70,19 @@ body {
 }
 .btn-primary:hover { background-color: #0047b3; }
 
-/* Main Content - Flexbox Mágico para não quebrar a tela */
+/* Main Content */
 .main-content {
     flex: 1;
     padding: 30px;
     display: flex;
     flex-direction: column;
     background-color: #f4f5f7;
-    overflow: hidden; /* Impede a tela principal de vazar */
+    overflow: hidden;
     box-sizing: border-box;
 }
 
 .group-by-section {
-    flex-shrink: 0; /* Garante que a barra de filtros NUNCA encolha */
+    flex-shrink: 0;
     margin-bottom: 20px;
     display: flex;
     align-items: center;
@@ -125,18 +125,18 @@ body {
 .add-group-select:hover { background-color: #ebecf0; border-radius: 3px; }
 
 /* ==================================================
-   TABLE WRAPPER (AQUI ACONTECE A MÁGICA DA ROLAGEM) 
+   TABLE WRAPPER & FREEZE PANES 
    ================================================== */
 .report-container {
-    flex: 1; /* Preenche todo o resto da tela */
+    flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 0; /* Imprescindível para o flex-child ativar overflow corretamente no Firefox/Chrome */
+    min-height: 0;
 }
 
 .table-wrapper {
     flex: 1;
-    overflow: auto; /* Rolagem X e Y VIVE AQUI, não na tela. O scrollbar vai ficar preso na base. */
+    overflow: auto;
     background-color: #ffffff;
     border-radius: 4px;
     border: 1px solid #dfe1e6;
@@ -145,12 +145,13 @@ body {
 
 table {
     width: 100%;
-    border-collapse: separate; /* OBRIGATÓRIO para sticky borders funcionarem sem falhas */
+    border-collapse: separate; 
     border-spacing: 0;
     font-size: 13px;
 }
 
 th, td {
+    box-sizing: border-box; /* OBRIGATÓRIO PARA O CÁLCULO DO LEFT DO STICKY */
     border-bottom: 1px solid #dfe1e6;
     border-right: 1px solid #dfe1e6;
     padding: 10px 12px;
@@ -159,51 +160,60 @@ th, td {
 }
 
 th:last-child, td:last-child { border-right: none; }
-tfoot td { border-bottom: none; } /* Remove borda inútil no final */
+tfoot td { border-bottom: none; }
 
-/* STICKY HEADERS - Cabeçalhos fixos no topo */
-thead th {
-    position: sticky;
-    z-index: 10;
-    box-shadow: 0 1px 0 #dfe1e6; /* Borda inferior fake para scroll limpo */
+/* DIMENSÕES FIXAS PARA AS COLUNAS CONGELADAS */
+.w-240 {
+    min-width: 240px;
+    max-width: 240px;
+    width: 240px;
 }
 
-/* Primeira linha do cabeçalho (Meses) */
-thead tr:nth-child(1) th {
+.w-100 {
+    min-width: 100px;
+    max-width: 100px;
+    width: 100px;
+}
+
+/* POSIÇÕES CONGELADAS (FREEZE PANES) */
+.sticky-col-1 { position: sticky; left: 0; z-index: 5; }
+.sticky-col-2 { position: sticky; left: 240px; z-index: 5; }
+.sticky-col-3 { position: sticky; left: 340px; z-index: 5; }
+.sticky-col-4 { position: sticky; left: 580px; z-index: 5; }
+
+/* HIERARQUIA DE Z-INDEX: Header > Frozen Header > Frozen Cols > Normal Cells */
+thead th { position: sticky; z-index: 10; box-shadow: 0 1px 0 #dfe1e6; }
+thead tr:nth-child(1) th { top: 0; height: 36px; box-sizing: border-box; }
+thead tr:nth-child(2) th { top: 36px; }
+
+/* Cruzamento: Header + Frozen Col (Fica acima de tudo na tabela) */
+thead th.sticky-col-1, thead th.sticky-col-2, thead th.sticky-col-3, thead th.sticky-col-4 {
+    z-index: 15;
+}
+
+/* Footer: Sticky + Frozen Col */
+tfoot td { position: sticky; bottom: 0; z-index: 10; background-color: #FAFBFC; box-shadow: 0 -1px 0 #dfe1e6; font-weight: 600; }
+tfoot td.sticky-col-1, tfoot td.sticky-col-2, tfoot td.sticky-col-3, tfoot td.sticky-col-4 {
+    z-index: 15;
+}
+
+/* SOMBRA EXCEL STYLE PARA SEPARAR A ÁREA CONGELADA DA ÁREA MÓVEL */
+.sticky-shadow::after {
+    content: '';
+    position: absolute;
     top: 0;
-    height: 36px;
-    box-sizing: border-box;
-}
-
-/* Segunda linha do cabeçalho (Dias) */
-thead tr:nth-child(2) th {
-    top: 36px; /* Gruda perfeitamente embaixo da primeira linha */
-}
-
-/* STICKY FOOTER - O Famoso Rodapé que não some mais */
-tfoot td {
-    position: sticky;
+    right: -6px; /* Desloca a sombra para fora da célula, caindo na área móvel */
     bottom: 0;
-    z-index: 10;
-    background-color: #FAFBFC;
-    box-shadow: 0 -1px 0 #dfe1e6; /* Borda superior fake para separar do conteúdo scrollando */
-    font-weight: 600;
+    width: 6px;
+    background: linear-gradient(to right, rgba(9, 30, 66, 0.12) 0%, rgba(9, 30, 66, 0) 100%);
+    pointer-events: none; /* Para não bloquear cliques nas células abaixo */
 }
 
 /* ESTILOS DE CÉLULAS */
 .month-header { background-color: #DEEBFF; color: #0747A6; font-weight: 600; text-align: center; }
-.bg-white { background-color: #ffffff; }
-.col-yellow { background-color: #FFF0B3; color: #172b4d; }
-
-/* Mantém o rodapé amarelo ligeiramente destacado */
+.bg-white { background-color: #ffffff; transition: all 0.15s ease; }
+.col-yellow { background-color: #FFF0B3; color: #172b4d; transition: all 0.15s ease; }
 tfoot .col-yellow { background-color: #FFE380; }
-
-.col-fixed {
-    width: 1%;
-    white-space: nowrap;
-    padding-left: 16px;
-    padding-right: 28px;
-}
 
 .day-col {
     width: 55px;
@@ -213,18 +223,37 @@ tfoot .col-yellow { background-color: #FFE380; }
 }
 .day-col span { text-transform: capitalize; }
 
-.filler-col {
-    width: auto;
-    background-color: #ffffff;
-    border-left: 1px solid #dfe1e6;
-}
+.filler-col { width: auto; background-color: #ffffff; border-left: 1px solid #dfe1e6; }
 
 .flex-align { display: flex; align-items: center; gap: 8px; }
 .flex-align img { width: 16px; height: 16px; display: block; flex-shrink: 0; }
+.flex-align span.text-content { 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+    white-space: nowrap; 
+    display: inline-block; 
+    max-width: 190px; /* Limita texto longo pra não quebrar layout das colunas 240px */
+}
 
 .col-issue a { color: #0052cc; text-decoration: none; }
 .col-issue a:hover { text-decoration: underline; }
-.col-issue-type, .col-issue { white-space: nowrap; color: #172b4d; background-color: #ffffff; }
+
+/* ==================================================
+   UX PERFECTION: DESTAQUE DE COORDENADAS E MARCAÇÕES
+   ================================================== */
+
+tbody tr:hover { background-color: #FAFBFC; }
+tbody tr:hover td.has-data {
+    box-shadow: inset 0 0 0 2px #FF5630;
+    background-color: #FFEBE6;
+    color: #BF2600;
+    font-weight: bold;
+    position: relative;
+    z-index: 1;
+}
+tbody tr:hover td.has-data:hover { background-color: #FFBDAD; }
+
+/* ================================================== */
 
 .empty-msg {
     font-size: 14px;
