@@ -4,6 +4,7 @@ const MEU_EMAIL = "jairo.junior@guaranisistemas.com.br";
 let activeGroups = ['tipo', 'issue'];
 let currentWorklogs = [];
 let currentDates = [];
+let modalData = {};
 
 document.getElementById('jsonFile').addEventListener('change', function(e) {
     const file = e.target.files[0];
@@ -91,6 +92,20 @@ function initDatesAndRender() {
     applyFilters();
 }
 
+function extractComment(doc) {
+    if (!doc || !doc.content) return "-";
+    let text = "";
+    doc.content.forEach(block => {
+        if (block.type === 'paragraph' && block.content) {
+            block.content.forEach(inline => {
+                if (inline.type === 'text') text += inline.text;
+            });
+            text += " "; 
+        }
+    });
+    return text.trim() || "-";
+}
+
 function applyFilters() {
     if (globalIssuesData.length === 0) {
         alert("Carregue o JSON primeiro.");
@@ -106,6 +121,8 @@ function applyFilters() {
     }
 
     currentWorklogs = [];
+    modalData = {};
+
     globalIssuesData.forEach(issue => {
         if (!issue.fields.worklog || !issue.fields.worklog.worklogs) return;
         
@@ -114,13 +131,21 @@ function applyFilters() {
             if (email === MEU_EMAIL) {
                 const d = wl.started.split('T')[0];
                 if (d >= fromStr && d <= toStr) {
-                    currentWorklogs.push({
+                    const wlObj = {
                         issueKey: issue.key,
                         type: issue.fields.issuetype.name,
                         typeIcon: issue.fields.issuetype.iconUrl,
                         date: d,
-                        sec: wl.timeSpentSeconds
-                    });
+                        sec: wl.timeSpentSeconds,
+                        timeSpent: wl.timeSpent,
+                        started: wl.started,
+                        comment: extractComment(wl.comment)
+                    };
+                    
+                    currentWorklogs.push(wlObj);
+
+                    if (!modalData[issue.key]) modalData[issue.key] = [];
+                    modalData[issue.key].push(wlObj);
                 }
             }
         });
@@ -153,6 +178,8 @@ function applyFilters() {
     renderHTML();
 }
 
+const btnIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>`;
+
 function renderHTML() {
     if (activeGroups.length === 0) {
         document.getElementById('reportContainer').innerHTML = "<div class='empty-msg'>Selecione pelo menos um campo no 'Group By' para visualizar a tabela.</div>";
@@ -160,8 +187,6 @@ function renderHTML() {
     }
 
     let html = `<div class="table-wrapper"><table><thead>`;
-    
-    // Header 1
     html += `<tr>`;
     
     let stickyHtml = '';
@@ -196,7 +221,6 @@ function renderHTML() {
     
     html += monthHeaders + `<th rowspan="2" class="filler-col"></th></tr><tr>`;
 
-    // Header 2 (Dias)
     currentDates.forEach(d => {
         const day = d.split('-')[2];
         const wd = getWeekdayBR(d);
@@ -208,7 +232,6 @@ function renderHTML() {
     const columnTotals = {};
     currentDates.forEach(d => columnTotals[d] = 0);
 
-    // Corpo da Tabela
     if (activeGroups.length === 2 && activeGroups[0] === 'tipo' && activeGroups[1] === 'issue') {
         const groups = {};
         currentWorklogs.forEach(wl => {
@@ -244,7 +267,6 @@ function renderHTML() {
                         </div>
                     </td>`;
                     
-                    // AQUI ESTÁ A CORREÇÃO: Adicionada a classe text-bold no Total do Tipo de Item
                     html += `<td rowspan="${issueKeys.length}" class="sticky-col col-total col-yellow text-bold" data-sticky-idx="1">
                         ${formatSeconds(grp.total)}
                     </td>`;
@@ -256,6 +278,7 @@ function renderHTML() {
                             <img src="${grp.icon}" onerror="this.style.display='none'"> 
                         </a>
                         <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank">${key}</a>
+                        <button class="btn-details" onclick="openModal('${key}')" title="Ver detalhes do worklog">${btnIcon}</button>
                     </div>
                 </td>`;
                 html += `<td class="sticky-col col-total col-yellow sticky-last-col text-bold" data-sticky-idx="3">${formatSeconds(iss.total)}</td>`;
@@ -288,12 +311,14 @@ function renderHTML() {
         Object.keys(issues).sort().forEach(key => {
             const iss = issues[key];
             html += `<tr>`;
+            
             html += `<td class="sticky-col col-auto bg-white col-issue-cell" data-sticky-idx="0">
                 <div class="flex-align">
                     <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank">
                         <img src="${iss.icon}" onerror="this.style.display='none'"> 
                     </a>
                     <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank">${key}</a>
+                    <button class="btn-details" onclick="openModal('${key}')" title="Ver detalhes do worklog">${btnIcon}</button>
                 </div>
             </td>`;
             html += `<td class="sticky-col col-total col-yellow sticky-last-col text-bold" data-sticky-idx="1">${formatSeconds(iss.total)}</td>`;
@@ -340,7 +365,6 @@ function renderHTML() {
         });
     }
 
-    // Fechamento do Corpo e Início do Footer
     html += `</tbody><tfoot><tr class="tfoot-total">`;
     
     if (activeGroups.length === 2) {
@@ -360,20 +384,16 @@ function renderHTML() {
     html += `<td class="filler-col"></td></tr></tfoot></table></div>`;
     document.getElementById('reportContainer').innerHTML = html;
 
-    // A mágica para ajustar os `left` das colunas sticky
     setTimeout(applyStickyOffsets, 50);
 }
 
 function applyStickyOffsets() {
     const table = document.querySelector('.table-wrapper table');
     if (!table) return;
-
     const firstRow = table.querySelector('thead tr:first-child');
     if (!firstRow) return;
-
     const numStickyCols = activeGroups.length * 2;
     let currentLeft = 0;
-
     for (let i = 0; i < numStickyCols; i++) {
         const th = firstRow.querySelector(`th[data-sticky-idx="${i}"]`);
         if (th) {
@@ -406,4 +426,80 @@ function getMonthYearBR(dateStr) {
     const d = new Date(dateStr + 'T12:00:00');
     const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
     return `${months[d.getMonth()]}, ${d.getFullYear()}`;
+}
+
+// ================= LÓGICA DO MODAL =================
+window.openModal = function(issueKey) {
+    const worklogs = modalData[issueKey];
+    if (!worklogs || worklogs.length === 0) return;
+
+    // Atualizado para mostrar apenas o link clicável
+    document.getElementById('modalTitle').innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+        </svg>
+        <a href="https://guaranisistemas.atlassian.net/browse/${issueKey}" target="_blank" class="modal-title-link">${issueKey}</a>
+    `;
+    
+    const tbody = document.getElementById('modalTableBody');
+    const tfoot = document.getElementById('modalTableFoot');
+    
+    tbody.innerHTML = '';
+    tfoot.innerHTML = '';
+
+    // Ordena cronologicamente
+    worklogs.sort((a, b) => new Date(a.started) - new Date(b.started));
+
+    let totalSec = 0;
+    const daysOfWeek = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+
+    worklogs.forEach(wl => {
+        const startDate = new Date(wl.started);
+        const endDate = new Date(startDate.getTime() + (wl.sec * 1000));
+        
+        // Pega o dia da semana e formata a data (ex: seg, 20/09/2026)
+        const wd = daysOfWeek[startDate.getDay()];
+        const dateStr = `${wd}, ${startDate.toLocaleDateString('pt-BR')}`;
+        
+        const startTime = startDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const endTime = endDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+        // Soma para o totalizador
+        totalSec += wl.sec;
+
+        tbody.innerHTML += `
+            <tr>
+                <td>${dateStr}</td>
+                <td>${startTime}</td>
+                <td>${endTime}</td>
+                <td>${wl.timeSpent}</td>
+                <td>${wl.comment}</td>
+            </tr>
+        `;
+    });
+
+    // Adiciona o totalizador no final do Modal
+    tfoot.innerHTML = `
+        <tr>
+            <td colspan="3" style="text-align: right;">Total</td>
+            <td>${formatSeconds(totalSec) || '0h'}</td>
+            <td></td>
+        </tr>
+    `;
+
+    // Alterado de 'block' para 'grid' para centralizar perfeitamente de acordo com o CSS
+    document.getElementById('worklogModal').style.display = 'grid';
+}
+
+window.closeModal = function() {
+    document.getElementById('worklogModal').style.display = 'none';
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('worklogModal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
 }
