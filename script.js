@@ -129,6 +129,7 @@ function applyFilters() {
             if (d >= fromStr && d <= toStr) {
                 const wlObj = {
                     issueKey: issue.key,
+                    summary: issue.fields.summary || "Sem Título", // Salva o título do ticket
                     type: issue.fields.issuetype.name,
                     typeIcon: issue.fields.issuetype.iconUrl,
                     date: d,
@@ -235,7 +236,7 @@ function renderHTML() {
             if (!grp.issues[wl.issueKey]) {
                 const daily = {};
                 currentDates.forEach(d => daily[d] = 0);
-                grp.issues[wl.issueKey] = { total: 0, daily: daily };
+                grp.issues[wl.issueKey] = { total: 0, daily: daily, summary: wl.summary };
             }
             
             if (grp.issues[wl.issueKey].daily[wl.date] !== undefined) {
@@ -266,13 +267,14 @@ function renderHTML() {
                     </td>`;
                 }
                 
+                // Adicionado atributo title para exibir o summary ao passar o mouse
                 html += `<td class="sticky-col col-auto bg-white col-issue-cell" data-sticky-idx="2">
                     <div class="flex-align">
-                        <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank">
+                        <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" title="${iss.summary}">
                             <img src="${grp.icon}" onerror="this.style.display='none'"> 
                         </a>
-                        <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank">${key}</a>
-                        <button class="btn-details" onclick="openModal('${key}')" title="Ver detalhes do worklog">${btnIcon}</button>
+                        <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" title="${iss.summary}">${key}</a>
+                        <button class="btn-details" onclick="openModal('${key}')" title="Ver detalhes de: ${iss.summary}">${btnIcon}</button>
                     </div>
                 </td>`;
                 html += `<td class="sticky-col col-total col-yellow sticky-last-col text-bold" data-sticky-idx="3">${formatSeconds(iss.total)}</td>`;
@@ -294,7 +296,7 @@ function renderHTML() {
             if (!issues[wl.issueKey]) {
                 const daily = {};
                 currentDates.forEach(d => daily[d] = 0);
-                issues[wl.issueKey] = { total: 0, icon: wl.typeIcon, daily: daily };
+                issues[wl.issueKey] = { total: 0, icon: wl.typeIcon, daily: daily, summary: wl.summary };
             }
             if (issues[wl.issueKey].daily[wl.date] !== undefined) {
                 issues[wl.issueKey].daily[wl.date] += wl.sec;
@@ -306,13 +308,14 @@ function renderHTML() {
             const iss = issues[key];
             html += `<tr>`;
             
+            // Adicionado atributo title para exibir o summary ao passar o mouse
             html += `<td class="sticky-col col-auto bg-white col-issue-cell" data-sticky-idx="0">
                 <div class="flex-align">
-                    <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank">
+                    <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" title="${iss.summary}">
                         <img src="${iss.icon}" onerror="this.style.display='none'"> 
                     </a>
-                    <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank">${key}</a>
-                    <button class="btn-details" onclick="openModal('${key}')" title="Ver detalhes do worklog">${btnIcon}</button>
+                    <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" title="${iss.summary}">${key}</a>
+                    <button class="btn-details" onclick="openModal('${key}')" title="Ver detalhes de: ${iss.summary}">${btnIcon}</button>
                 </div>
             </td>`;
             html += `<td class="sticky-col col-total col-yellow sticky-last-col text-bold" data-sticky-idx="1">${formatSeconds(iss.total)}</td>`;
@@ -427,13 +430,23 @@ window.openModal = function(issueKey) {
     const worklogs = modalData[issueKey];
     if (!worklogs || worklogs.length === 0) return;
 
+    const issueSummary = worklogs[0].summary;
+
+    // Título direto como link e com o Summary (título da issue) logo abaixo
     document.getElementById('modalTitle').innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0052cc" stroke-width="2" style="margin-right: 8px;">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-            <polyline points="15 3 21 3 21 9"></polyline>
-            <line x1="10" y1="14" x2="21" y2="3"></line>
-        </svg>
-        <a href="https://guaranisistemas.atlassian.net/browse/${issueKey}" target="_blank" style="color: #0052cc; text-decoration: none;">${issueKey}</a>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; align-items: center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0052cc" stroke-width="2" style="margin-right: 8px;">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+                <a href="https://guaranisistemas.atlassian.net/browse/${issueKey}" target="_blank" style="color: #0052cc; text-decoration: none;">${issueKey}</a>
+            </div>
+            <div style="font-size: 13px; color: #5e6c84; font-weight: normal; margin-left: 28px;">
+                ${issueSummary}
+            </div>
+        </div>
     `;
     
     const tbody = document.getElementById('modalTableBody');
@@ -479,16 +492,15 @@ window.openModal = function(issueKey) {
     `;
 
     const modal = document.getElementById('worklogModal');
-    // Em vez de forçar o centro exato da tela (place-items: center), alinhemo-o ao topo com margem
     modal.style.display = 'flex';
     modal.style.justifyContent = 'center';
     modal.style.alignItems = 'flex-start';
-    modal.style.paddingTop = '10vh'; // Ajuste elegante para ancorar no topo, descendo 10% da tela
+    modal.style.paddingTop = '10vh';
 
     const modalContent = document.querySelector('.modal-content');
     if (modalContent) {
         modalContent.style.margin = '0'; 
-        modalContent.style.maxHeight = '80vh'; // Garante que não invada a base da tela
+        modalContent.style.maxHeight = '80vh';
         modalContent.style.display = 'grid';
         modalContent.style.gridTemplateRows = 'auto 1fr';
         modalContent.style.overflow = 'hidden'; 
