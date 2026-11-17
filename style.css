@@ -175,7 +175,8 @@ thead tr:nth-child(2) th { top: 36px; }
 thead th.sticky-col { z-index: 15; }
 tfoot td.sticky-col { z-index: 15; }
 
-tfoot td { position: sticky; bottom: 0; z-index: 10; background-color: #FAFBFC; box-shadow: 0 -1px 0 #dfe1e6; font-weight: 600; }
+/* O FOOTER NÃO TEM MAIS NEGITO GLOBAL - Foi movido para a classe .text-bold */
+tfoot td { position: sticky; bottom: 0; z-index: 10; background-color: #FAFBFC; box-shadow: 0 -1px 0 #dfe1e6; }
 
 .sticky-last-col::after {
     content: '';
@@ -188,7 +189,7 @@ tfoot td { position: sticky; bottom: 0; z-index: 10; background-color: #FAFBFC; 
     pointer-events: none;
 }
 
-/* ESTILOS DE CÉLULAS */
+/* ESTILOS DE CÉLULAS E CORES */
 .month-header { background-color: #DEEBFF; color: #0747A6; font-weight: 600; text-align: center; }
 .bg-white { background-color: #ffffff; }
 .col-yellow { background-color: #FFF0B3; color: #172b4d; }
@@ -220,10 +221,15 @@ tfoot .col-yellow { background-color: #FFE380; }
 .col-issue a { color: #0052cc; text-decoration: none; cursor: pointer; }
 .col-issue a:hover { text-decoration: underline; }
 
-/* HOVER SIMPLES (Apenas mudança de fundo da linha, sem destaques exagerados) */
+/* REVESTIMENTO LIMPO NAS LINHAS (HOVER) */
 tbody tr:hover td { background-color: #FAFBFC; }
-tbody tr:hover td.col-yellow { background-color: #fdf5d3; } /* Amarelo um pouco mais escuro no hover */
+tbody tr:hover td.col-yellow { background-color: #fdf5d3; }
 
+/* Classe para setar o negrito focado onde você pediu */
+.text-bold {
+    font-weight: 600 !important;
+    color: #172b4d;
+}
 
 .empty-msg {
     font-size: 14px;
