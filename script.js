@@ -74,7 +74,6 @@ function initDatesAndRender() {
         if (!issue.fields.worklog || !issue.fields.worklog.worklogs) return;
         
         issue.fields.worklog.worklogs.forEach(wl => {
-            // Removida a trava de E-mail: agora aceita qualquer apontamento do arquivo JSON
             const d = wl.started.split('T')[0];
             if (d < minD) minD = d;
             if (d > maxD) maxD = d;
@@ -127,7 +126,6 @@ function applyFilters() {
         issue.fields.worklog.worklogs.forEach(wl => {
             const d = wl.started.split('T')[0];
             
-            // Removida a trava de E-mail
             if (d >= fromStr && d <= toStr) {
                 const wlObj = {
                     issueKey: issue.key,
@@ -429,7 +427,6 @@ window.openModal = function(issueKey) {
     const worklogs = modalData[issueKey];
     if (!worklogs || worklogs.length === 0) return;
 
-    // Título direto como link (sem "Worklogs - ")
     document.getElementById('modalTitle').innerHTML = `
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0052cc" stroke-width="2" style="margin-right: 8px;">
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
@@ -445,7 +442,6 @@ window.openModal = function(issueKey) {
     tbody.innerHTML = '';
     tfoot.innerHTML = '';
 
-    // Ordena cronologicamente
     worklogs.sort((a, b) => new Date(a.started) - new Date(b.started));
 
     let totalSec = 0;
@@ -482,15 +478,17 @@ window.openModal = function(issueKey) {
         </tr>
     `;
 
-    // Aplica Grid Dinâmico, centralização e Scroll direto no JS (dispensa alteração no CSS)
     const modal = document.getElementById('worklogModal');
-    modal.style.display = 'grid';
-    modal.style.placeItems = 'center';
+    // Em vez de forçar o centro exato da tela (place-items: center), alinhemo-o ao topo com margem
+    modal.style.display = 'flex';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'flex-start';
+    modal.style.paddingTop = '10vh'; // Ajuste elegante para ancorar no topo, descendo 10% da tela
 
     const modalContent = document.querySelector('.modal-content');
     if (modalContent) {
-        modalContent.style.margin = '0';
-        modalContent.style.maxHeight = '90vh';
+        modalContent.style.margin = '0'; 
+        modalContent.style.maxHeight = '80vh'; // Garante que não invada a base da tela
         modalContent.style.display = 'grid';
         modalContent.style.gridTemplateRows = 'auto 1fr';
         modalContent.style.overflow = 'hidden'; 
