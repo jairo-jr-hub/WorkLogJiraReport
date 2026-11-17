@@ -161,13 +161,18 @@ function renderHTML() {
 
     let html = `<div class="table-wrapper"><table><thead>`;
     
-    // Header 1: Mês e Labels
+    // Header 1: Mês e Labels com Classes Sticky
     html += `<tr>`;
-    activeGroups.forEach(g => {
-        const label = g === 'tipo' ? 'Tipo de item' : 'Issue';
-        html += `<th rowspan="2" class="bg-white col-fixed">${label}</th>`;
-        html += `<th rowspan="2" class="col-yellow col-fixed" style="text-align:left;">Total<br>${label}</th>`;
-    });
+    if (activeGroups.length === 2) {
+        html += `<th rowspan="2" class="bg-white sticky-col-1 w-240">Tipo de item</th>`;
+        html += `<th rowspan="2" class="col-yellow sticky-col-2 w-100" style="text-align:left;">Total<br>Tipo de item</th>`;
+        html += `<th rowspan="2" class="bg-white sticky-col-3 w-240">Issue</th>`;
+        html += `<th rowspan="2" class="col-yellow sticky-col-4 w-100 sticky-shadow" style="text-align:left;">Total<br>Issue</th>`;
+    } else if (activeGroups.length === 1) {
+        const label = activeGroups[0] === 'tipo' ? 'Tipo de item' : 'Issue';
+        html += `<th rowspan="2" class="bg-white sticky-col-1 w-240">${label}</th>`;
+        html += `<th rowspan="2" class="col-yellow sticky-col-2 w-100 sticky-shadow" style="text-align:left;">Total<br>${label}</th>`;
+    }
     
     let currentMonth = "";
     let colspan = 0;
@@ -227,29 +232,30 @@ function renderHTML() {
                 html += `<tr>`;
                 
                 if (idx === 0) {
-                    html += `<td rowspan="${issueKeys.length}" class="col-fixed bg-white">
+                    html += `<td rowspan="${issueKeys.length}" class="sticky-col-1 w-240 bg-white">
                         <div class="flex-align">
                             <img src="${grp.icon}" onerror="this.style.display='none'"> 
-                            <span>${typeName}</span>
+                            <span class="text-content" title="${typeName}">${typeName}</span>
                         </div>
                     </td>`;
-                    html += `<td rowspan="${issueKeys.length}" class="col-fixed col-yellow" style="font-weight:500;">
+                    html += `<td rowspan="${issueKeys.length}" class="sticky-col-2 w-100 col-yellow" style="font-weight:500;">
                         ${formatSeconds(grp.total)}
                     </td>`;
                 }
                 
-                html += `<td class="col-fixed bg-white">
+                html += `<td class="sticky-col-3 w-240 bg-white col-issue">
                     <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" class="flex-align">
                         <img src="${grp.icon}" onerror="this.style.display='none'"> 
-                        <span>${key}</span>
+                        <span class="text-content" title="${key}">${key}</span>
                     </a>
                 </td>`;
-                html += `<td class="col-fixed col-yellow" style="font-weight:500;">${formatSeconds(iss.total)}</td>`;
+                html += `<td class="sticky-col-4 w-100 col-yellow sticky-shadow" style="font-weight:500;">${formatSeconds(iss.total)}</td>`;
                 
                 currentDates.forEach(d => {
                     const sec = iss.daily[d];
                     columnTotals[d] += sec;
-                    html += `<td class="day-col bg-white">${formatSeconds(sec)}</td>`;
+                    const highlightClass = sec > 0 ? " has-data" : "";
+                    html += `<td class="day-col bg-white${highlightClass}">${formatSeconds(sec)}</td>`;
                 });
                 
                 html += `<td class="filler-col"></td></tr>`;
@@ -274,17 +280,18 @@ function renderHTML() {
         Object.keys(issues).sort().forEach(key => {
             const iss = issues[key];
             html += `<tr>`;
-            html += `<td class="col-fixed bg-white">
+            html += `<td class="sticky-col-1 w-240 bg-white col-issue">
                 <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" class="flex-align">
                     <img src="${iss.icon}" onerror="this.style.display='none'"> 
-                    <span>${key}</span>
+                    <span class="text-content" title="${key}">${key}</span>
                 </a>
             </td>`;
-            html += `<td class="col-fixed col-yellow" style="font-weight:500;">${formatSeconds(iss.total)}</td>`;
+            html += `<td class="sticky-col-2 w-100 col-yellow sticky-shadow" style="font-weight:500;">${formatSeconds(iss.total)}</td>`;
             currentDates.forEach(d => {
                 const sec = iss.daily[d];
                 columnTotals[d] += sec;
-                html += `<td class="day-col bg-white">${formatSeconds(sec)}</td>`;
+                const highlightClass = sec > 0 ? " has-data" : "";
+                html += `<td class="day-col bg-white${highlightClass}">${formatSeconds(sec)}</td>`;
             });
             html += `<td class="filler-col"></td></tr>`;
             grandTotal += iss.total;
@@ -307,17 +314,18 @@ function renderHTML() {
         Object.keys(types).sort().forEach(key => {
             const typ = types[key];
             html += `<tr>`;
-            html += `<td class="col-fixed bg-white">
+            html += `<td class="sticky-col-1 w-240 bg-white col-issue-type">
                 <div class="flex-align">
                     <img src="${typ.icon}" onerror="this.style.display='none'"> 
-                    <span>${key}</span>
+                    <span class="text-content" title="${key}">${key}</span>
                 </div>
             </td>`;
-            html += `<td class="col-fixed col-yellow" style="font-weight:500;">${formatSeconds(typ.total)}</td>`;
+            html += `<td class="sticky-col-2 w-100 col-yellow sticky-shadow" style="font-weight:500;">${formatSeconds(typ.total)}</td>`;
             currentDates.forEach(d => {
                 const sec = typ.daily[d];
                 columnTotals[d] += sec;
-                html += `<td class="day-col bg-white">${formatSeconds(sec)}</td>`;
+                const highlightClass = sec > 0 ? " has-data" : "";
+                html += `<td class="day-col bg-white${highlightClass}">${formatSeconds(sec)}</td>`;
             });
             html += `<td class="filler-col"></td></tr>`;
             grandTotal += typ.total;
@@ -328,13 +336,13 @@ function renderHTML() {
     html += `</tbody><tfoot><tr class="tfoot-total">`;
     
     if (activeGroups.length === 2) {
-        html += `<td style="text-align:right;">Total</td>`;
-        html += `<td class="col-yellow">${formatSeconds(grandTotal)}</td>`;
-        html += `<td></td>`;
-        html += `<td class="col-yellow">${formatSeconds(grandTotal)}</td>`;
+        html += `<td class="sticky-col-1 w-240" style="text-align:right;">Total</td>`;
+        html += `<td class="sticky-col-2 w-100 col-yellow">${formatSeconds(grandTotal)}</td>`;
+        html += `<td class="sticky-col-3 w-240"></td>`;
+        html += `<td class="sticky-col-4 w-100 col-yellow sticky-shadow">${formatSeconds(grandTotal)}</td>`;
     } else {
-        html += `<td style="text-align:right;">Total</td>`;
-        html += `<td class="col-yellow">${formatSeconds(grandTotal)}</td>`;
+        html += `<td class="sticky-col-1 w-240" style="text-align:right;">Total</td>`;
+        html += `<td class="sticky-col-2 w-100 col-yellow sticky-shadow">${formatSeconds(grandTotal)}</td>`;
     }
     
     currentDates.forEach(d => {
@@ -346,7 +354,7 @@ function renderHTML() {
 }
 
 function formatSeconds(sec) {
-    if (!sec) return '';
+    if (!sec || sec <= 0) return '';
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
     if (h > 0 && m > 0) return `${h}h ${m}m`;
