@@ -1,5 +1,4 @@
 let globalIssuesData = [];
-const MEU_EMAIL = "jairo.junior@guaranisistemas.com.br";
 
 let activeGroups = ['tipo', 'issue'];
 let currentWorklogs = [];
@@ -73,14 +72,13 @@ function initDatesAndRender() {
 
     globalIssuesData.forEach(issue => {
         if (!issue.fields.worklog || !issue.fields.worklog.worklogs) return;
+        
         issue.fields.worklog.worklogs.forEach(wl => {
-            const email = wl.author.emailAddress ? wl.author.emailAddress.toLowerCase() : "";
-            if (email === MEU_EMAIL) {
-                const d = wl.started.split('T')[0];
-                if (d < minD) minD = d;
-                if (d > maxD) maxD = d;
-                found = true;
-            }
+            // Removida a trava de E-mail: agora aceita qualquer apontamento do arquivo JSON
+            const d = wl.started.split('T')[0];
+            if (d < minD) minD = d;
+            if (d > maxD) maxD = d;
+            found = true;
         });
     });
 
@@ -127,26 +125,25 @@ function applyFilters() {
         if (!issue.fields.worklog || !issue.fields.worklog.worklogs) return;
         
         issue.fields.worklog.worklogs.forEach(wl => {
-            const email = wl.author.emailAddress ? wl.author.emailAddress.toLowerCase() : "";
-            if (email === MEU_EMAIL) {
-                const d = wl.started.split('T')[0];
-                if (d >= fromStr && d <= toStr) {
-                    const wlObj = {
-                        issueKey: issue.key,
-                        type: issue.fields.issuetype.name,
-                        typeIcon: issue.fields.issuetype.iconUrl,
-                        date: d,
-                        sec: wl.timeSpentSeconds,
-                        timeSpent: wl.timeSpent,
-                        started: wl.started,
-                        comment: extractComment(wl.comment)
-                    };
-                    
-                    currentWorklogs.push(wlObj);
+            const d = wl.started.split('T')[0];
+            
+            // Removida a trava de E-mail
+            if (d >= fromStr && d <= toStr) {
+                const wlObj = {
+                    issueKey: issue.key,
+                    type: issue.fields.issuetype.name,
+                    typeIcon: issue.fields.issuetype.iconUrl,
+                    date: d,
+                    sec: wl.timeSpentSeconds,
+                    timeSpent: wl.timeSpent,
+                    started: wl.started,
+                    comment: extractComment(wl.comment)
+                };
+                
+                currentWorklogs.push(wlObj);
 
-                    if (!modalData[issue.key]) modalData[issue.key] = [];
-                    modalData[issue.key].push(wlObj);
-                }
+                if (!modalData[issue.key]) modalData[issue.key] = [];
+                modalData[issue.key].push(wlObj);
             }
         });
     });
@@ -186,8 +183,7 @@ function renderHTML() {
         return;
     }
 
-    let html = `<div class="table-wrapper"><table><thead>`;
-    html += `<tr>`;
+    let html = `<div class="table-wrapper"><table><thead><tr>`;
     
     let stickyHtml = '';
     if (activeGroups.length === 2) {
@@ -433,14 +429,14 @@ window.openModal = function(issueKey) {
     const worklogs = modalData[issueKey];
     if (!worklogs || worklogs.length === 0) return;
 
-    // Atualizado para mostrar apenas o link clicável
+    // Título direto como link (sem "Worklogs - ")
     document.getElementById('modalTitle').innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0052cc" stroke-width="2" style="margin-right: 8px;">
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
             <polyline points="15 3 21 3 21 9"></polyline>
             <line x1="10" y1="14" x2="21" y2="3"></line>
         </svg>
-        <a href="https://guaranisistemas.atlassian.net/browse/${issueKey}" target="_blank" class="modal-title-link">${issueKey}</a>
+        <a href="https://guaranisistemas.atlassian.net/browse/${issueKey}" target="_blank" style="color: #0052cc; text-decoration: none;">${issueKey}</a>
     `;
     
     const tbody = document.getElementById('modalTableBody');
@@ -459,14 +455,12 @@ window.openModal = function(issueKey) {
         const startDate = new Date(wl.started);
         const endDate = new Date(startDate.getTime() + (wl.sec * 1000));
         
-        // Pega o dia da semana e formata a data (ex: seg, 20/09/2026)
         const wd = daysOfWeek[startDate.getDay()];
         const dateStr = `${wd}, ${startDate.toLocaleDateString('pt-BR')}`;
         
         const startTime = startDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         const endTime = endDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-        // Soma para o totalizador
         totalSec += wl.sec;
 
         tbody.innerHTML += `
@@ -480,17 +474,33 @@ window.openModal = function(issueKey) {
         `;
     });
 
-    // Adiciona o totalizador no final do Modal
     tfoot.innerHTML = `
         <tr>
-            <td colspan="3" style="text-align: right;">Total</td>
-            <td>${formatSeconds(totalSec) || '0h'}</td>
-            <td></td>
+            <td colspan="3" style="text-align: right; border-top: 2px solid #dfe1e6; position: sticky; bottom: 0; background-color: #f4f5f7;">Total</td>
+            <td style="border-top: 2px solid #dfe1e6; position: sticky; bottom: 0; background-color: #f4f5f7;">${formatSeconds(totalSec) || '0h'}</td>
+            <td style="border-top: 2px solid #dfe1e6; position: sticky; bottom: 0; background-color: #f4f5f7;"></td>
         </tr>
     `;
 
-    // Alterado de 'block' para 'grid' para centralizar perfeitamente de acordo com o CSS
-    document.getElementById('worklogModal').style.display = 'grid';
+    // Aplica Grid Dinâmico, centralização e Scroll direto no JS (dispensa alteração no CSS)
+    const modal = document.getElementById('worklogModal');
+    modal.style.display = 'grid';
+    modal.style.placeItems = 'center';
+
+    const modalContent = document.querySelector('.modal-content');
+    if (modalContent) {
+        modalContent.style.margin = '0';
+        modalContent.style.maxHeight = '90vh';
+        modalContent.style.display = 'grid';
+        modalContent.style.gridTemplateRows = 'auto 1fr';
+        modalContent.style.overflow = 'hidden'; 
+    }
+
+    const modalBody = document.querySelector('.modal-body');
+    if (modalBody) {
+        modalBody.style.overflowY = 'auto';
+        modalBody.style.paddingRight = '4px';
+    }
 }
 
 window.closeModal = function() {
