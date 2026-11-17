@@ -123,14 +123,19 @@ function applyFilters() {
     globalIssuesData.forEach(issue => {
         if (!issue.fields.worklog || !issue.fields.worklog.worklogs) return;
         
-        // Tenta capturar o Ticket Pai (seja do objeto parent oficial ou extraindo do sumário para subtarefas)
+        // Identificação inteligente do Ticket Pai (caso seja subtarefa ou mencione outro ERP no sumário)
         let pKey = null;
         if (issue.fields.parent && issue.fields.parent.key) {
             pKey = issue.fields.parent.key;
-        } else if (issue.fields.issuetype && issue.fields.issuetype.subtask) {
-            const match = issue.fields.summary.match(/ERP-\d+/);
-            if (match && match[0] !== issue.key) {
-                pKey = match[0];
+        } else {
+            // Procura por padrões como [ERP-23820] ou ERP-23820 no sumário
+            const matches = issue.fields.summary.match(/ERP-\d+/g);
+            if (matches) {
+                // Pega o primeiro ERP encontrado que seja diferente da própria issue atual
+                const foundParent = matches.find(m => m !== issue.key);
+                if (foundParent) {
+                    pKey = foundParent;
+                }
             }
         }
         
@@ -248,7 +253,7 @@ function renderHTML() {
             if (!grp.issues[wl.issueKey]) {
                 const daily = {};
                 currentDates.forEach(d => daily[d] = 0);
-                grp.issues[wl.issueKey] = { total: 0, daily: daily, summary: wl.summary };
+                grp.issues[wl.issueKey] = { total: 0, daily: daily, summary: wl.summary, parentKey: wl.parentKey };
             }
             
             if (grp.issues[wl.issueKey].daily[wl.date] !== undefined) {
@@ -279,13 +284,16 @@ function renderHTML() {
                     </td>`;
                 }
                 
+                // UX Tooltip refinado: exibe o pai (se houver) + o título do ticket ao passar o mouse
+                const tooltipText = iss.parentKey ? `[${iss.parentKey}] ${iss.summary}` : iss.summary;
+
                 html += `<td class="sticky-col col-auto bg-white col-issue-cell" data-sticky-idx="2">
                     <div class="flex-align">
-                        <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" title="${iss.summary}">
+                        <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" title="${tooltipText}">
                             <img src="${grp.icon}" onerror="this.style.display='none'"> 
                         </a>
-                        <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" title="${iss.summary}">${key}</a>
-                        <button class="btn-details" onclick="openModal('${key}')" title="Ver detalhes de: ${iss.summary}">${btnIcon}</button>
+                        <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" title="${tooltipText}">${key}</a>
+                        <button class="btn-details" onclick="openModal('${key}')" title="Ver detalhes">${btnIcon}</button>
                     </div>
                 </td>`;
                 html += `<td class="sticky-col col-total col-yellow sticky-last-col text-bold" data-sticky-idx="3">${formatSeconds(iss.total)}</td>`;
@@ -307,7 +315,7 @@ function renderHTML() {
             if (!issues[wl.issueKey]) {
                 const daily = {};
                 currentDates.forEach(d => daily[d] = 0);
-                issues[wl.issueKey] = { total: 0, icon: wl.typeIcon, daily: daily, summary: wl.summary };
+                issues[wl.issueKey] = { total: 0, icon: wl.typeIcon, daily: daily, summary: wl.summary, parentKey: wl.parentKey };
             }
             if (issues[wl.issueKey].daily[wl.date] !== undefined) {
                 issues[wl.issueKey].daily[wl.date] += wl.sec;
@@ -319,13 +327,15 @@ function renderHTML() {
             const iss = issues[key];
             html += `<tr>`;
             
+            const tooltipText = iss.parentKey ? `[${iss.parentKey}] ${iss.summary}` : iss.summary;
+
             html += `<td class="sticky-col col-auto bg-white col-issue-cell" data-sticky-idx="0">
                 <div class="flex-align">
-                    <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" title="${iss.summary}">
+                    <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" title="${tooltipText}">
                         <img src="${iss.icon}" onerror="this.style.display='none'"> 
                     </a>
-                    <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" title="${iss.summary}">${key}</a>
-                    <button class="btn-details" onclick="openModal('${key}')" title="Ver detalhes de: ${iss.summary}">${btnIcon}</button>
+                    <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" title="${tooltipText}">${key}</a>
+                    <button class="btn-details" onclick="openModal('${key}')" title="Ver detalhes">${btnIcon}</button>
                 </div>
             </td>`;
             html += `<td class="sticky-col col-total col-yellow sticky-last-col text-bold" data-sticky-idx="1">${formatSeconds(iss.total)}</td>`;
@@ -443,22 +453,24 @@ window.openModal = function(issueKey) {
     const issueSummary = worklogs[0].summary;
     const parentKey = worklogs[0].parentKey;
 
-    // Monta o título grandão com breadcrumb (Pai / Filho) caso exista o ticket pai
+    // Constrói o cabeçalho no padrão visual de breadcrumb do Jira (Pai / Filho) com destaque limpo
     let titleHtml = '';
     if (parentKey) {
-        titleHtml = `<a href="https://guaranisistemas.atlassian.net/browse/${parentKey}" target="_blank" style="color: #5e6c84; text-decoration: none;">${parentKey}</a> / `;
+        titleHtml = `<a href="https://guaranisistemas.atlassian.net/browse/${parentKey}" target="_blank" style="color: #5e6c84; text-decoration: none; font-weight: 500; font-size: 16px;">${parentKey}</a> <span style="color: #97a0af; margin: 0 4px; font-weight: 300;">/</span> `;
     }
-    titleHtml += `<a href="https://guaranisistemas.atlassian.net/browse/${issueKey}" target="_blank" style="color: #0052cc; text-decoration: none;">${issueKey}</a>`;
+    titleHtml += `<a href="https://guaranisistemas.atlassian.net/browse/${issueKey}" target="_blank" style="color: #0052cc; text-decoration: none; font-weight: 600;">${issueKey}</a>`;
 
     document.getElementById('modalTitle').innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 6px;">
-            <div style="display: flex; align-items: center; font-size: 20px; font-weight: 600; line-height: 1;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0052cc" stroke-width="2" style="margin-right: 8px;">
+            <div style="display: flex; align-items: center; font-size: 20px; line-height: 1.2;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0052cc" stroke-width="2" style="margin-right: 10px; flex-shrink: 0;">
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                     <polyline points="15 3 21 3 21 9"></polyline>
                     <line x1="10" y1="14" x2="21" y2="3"></line>
                 </svg>
-                ${titleHtml}
+                <div style="display: flex; align-items: center; flex-wrap: wrap;">
+                    ${titleHtml}
+                </div>
             </div>
             <div style="font-size: 14px; color: #5e6c84; font-weight: normal; margin-left: 32px; line-height: 1.4;">
                 ${issueSummary}
