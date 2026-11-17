@@ -345,7 +345,7 @@ function renderHTML() {
     
     if (activeGroups.length === 2) {
         html += `<td class="sticky-col col-auto text-bold" data-sticky-idx="0" style="text-align:right;">Total</td>`;
-        html += `<td class="sticky-col col-total col-yellow" data-sticky-idx="1">${formatSeconds(grandTotal)}</td>`;
+        html += `<td class="sticky-col col-total col-yellow text-bold" data-sticky-idx="1">${formatSeconds(grandTotal)}</td>`;
         html += `<td class="sticky-col col-auto" data-sticky-idx="2"></td>`;
         html += `<td class="sticky-col col-total col-yellow sticky-last-col text-bold" data-sticky-idx="3">${formatSeconds(grandTotal)}</td>`;
     } else {
