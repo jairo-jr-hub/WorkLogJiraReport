@@ -123,13 +123,25 @@ function applyFilters() {
     globalIssuesData.forEach(issue => {
         if (!issue.fields.worklog || !issue.fields.worklog.worklogs) return;
         
+        // Tenta capturar o Ticket Pai (seja do objeto parent oficial ou extraindo do sumário para subtarefas)
+        let pKey = null;
+        if (issue.fields.parent && issue.fields.parent.key) {
+            pKey = issue.fields.parent.key;
+        } else if (issue.fields.issuetype && issue.fields.issuetype.subtask) {
+            const match = issue.fields.summary.match(/ERP-\d+/);
+            if (match && match[0] !== issue.key) {
+                pKey = match[0];
+            }
+        }
+        
         issue.fields.worklog.worklogs.forEach(wl => {
             const d = wl.started.split('T')[0];
             
             if (d >= fromStr && d <= toStr) {
                 const wlObj = {
                     issueKey: issue.key,
-                    summary: issue.fields.summary || "Sem Título", // Salva o título do ticket
+                    parentKey: pKey,
+                    summary: issue.fields.summary || "Sem Título",
                     type: issue.fields.issuetype.name,
                     typeIcon: issue.fields.issuetype.iconUrl,
                     date: d,
@@ -267,7 +279,6 @@ function renderHTML() {
                     </td>`;
                 }
                 
-                // Adicionado atributo title para exibir o summary ao passar o mouse
                 html += `<td class="sticky-col col-auto bg-white col-issue-cell" data-sticky-idx="2">
                     <div class="flex-align">
                         <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" title="${iss.summary}">
@@ -308,7 +319,6 @@ function renderHTML() {
             const iss = issues[key];
             html += `<tr>`;
             
-            // Adicionado atributo title para exibir o summary ao passar o mouse
             html += `<td class="sticky-col col-auto bg-white col-issue-cell" data-sticky-idx="0">
                 <div class="flex-align">
                     <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" title="${iss.summary}">
@@ -431,19 +441,26 @@ window.openModal = function(issueKey) {
     if (!worklogs || worklogs.length === 0) return;
 
     const issueSummary = worklogs[0].summary;
+    const parentKey = worklogs[0].parentKey;
 
-    // Título direto como link e com o Summary (título da issue) logo abaixo
+    // Monta o título grandão com breadcrumb (Pai / Filho) caso exista o ticket pai
+    let titleHtml = '';
+    if (parentKey) {
+        titleHtml = `<a href="https://guaranisistemas.atlassian.net/browse/${parentKey}" target="_blank" style="color: #5e6c84; text-decoration: none;">${parentKey}</a> / `;
+    }
+    titleHtml += `<a href="https://guaranisistemas.atlassian.net/browse/${issueKey}" target="_blank" style="color: #0052cc; text-decoration: none;">${issueKey}</a>`;
+
     document.getElementById('modalTitle').innerHTML = `
-        <div style="display: flex; flex-direction: column; gap: 4px;">
-            <div style="display: flex; align-items: center;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0052cc" stroke-width="2" style="margin-right: 8px;">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; align-items: center; font-size: 20px; font-weight: 600; line-height: 1;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0052cc" stroke-width="2" style="margin-right: 8px;">
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                     <polyline points="15 3 21 3 21 9"></polyline>
                     <line x1="10" y1="14" x2="21" y2="3"></line>
                 </svg>
-                <a href="https://guaranisistemas.atlassian.net/browse/${issueKey}" target="_blank" style="color: #0052cc; text-decoration: none;">${issueKey}</a>
+                ${titleHtml}
             </div>
-            <div style="font-size: 13px; color: #5e6c84; font-weight: normal; margin-left: 28px;">
+            <div style="font-size: 14px; color: #5e6c84; font-weight: normal; margin-left: 32px; line-height: 1.4;">
                 ${issueSummary}
             </div>
         </div>
