@@ -203,6 +203,10 @@ tfoot .col-yellow { background-color: #FFE380; }
     min-width: 55px;
     text-align: center;
     padding: 8px 4px;
+    cursor: default;
+    user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
 }
 .day-col span { text-transform: capitalize; }
 
@@ -220,10 +224,6 @@ tfoot .col-yellow { background-color: #FFE380; }
 
 .col-issue a { color: #0052cc; text-decoration: none; cursor: pointer; }
 .col-issue a:hover { text-decoration: underline; }
-
-/* REVESTIMENTO LIMPO NAS LINHAS (HOVER) */
-tbody tr:hover td { background-color: #FAFBFC; }
-tbody tr:hover td.col-yellow { background-color: #fdf5d3; }
 
 /* Classe para setar o negrito focado onde você pediu */
 .text-bold {
