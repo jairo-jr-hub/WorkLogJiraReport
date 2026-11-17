@@ -237,13 +237,15 @@ function renderHTML() {
                 html += `<tr>`;
                 
                 if (idx === 0) {
-                    html += `<td rowspan="${issueKeys.length}" class="sticky-col col-auto bg-white col-tipo-cell" data-sticky-idx="0">
+                    html += `<td rowspan="${issueKeys.length}" class="sticky-col col-auto bg-white col-tipo-cell text-bold" data-sticky-idx="0">
                         <div class="flex-align">
                             <img src="${grp.icon}" onerror="this.style.display='none'"> 
-                            <span>${typeName}</span>
+                            <span class="text-content" title="${typeName}">${typeName}</span>
                         </div>
                     </td>`;
-                    html += `<td rowspan="${issueKeys.length}" class="sticky-col col-total col-yellow" data-sticky-idx="1">
+                    
+                    // AQUI ESTÁ A CORREÇÃO: Adicionada a classe text-bold no Total do Tipo de Item
+                    html += `<td rowspan="${issueKeys.length}" class="sticky-col col-total col-yellow text-bold" data-sticky-idx="1">
                         ${formatSeconds(grp.total)}
                     </td>`;
                 }
@@ -256,7 +258,7 @@ function renderHTML() {
                         <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank">${key}</a>
                     </div>
                 </td>`;
-                html += `<td class="sticky-col col-total col-yellow sticky-last-col" data-sticky-idx="3">${formatSeconds(iss.total)}</td>`;
+                html += `<td class="sticky-col col-total col-yellow sticky-last-col text-bold" data-sticky-idx="3">${formatSeconds(iss.total)}</td>`;
                 
                 currentDates.forEach(d => {
                     const sec = iss.daily[d];
@@ -294,7 +296,7 @@ function renderHTML() {
                     <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank">${key}</a>
                 </div>
             </td>`;
-            html += `<td class="sticky-col col-total col-yellow sticky-last-col" data-sticky-idx="1">${formatSeconds(iss.total)}</td>`;
+            html += `<td class="sticky-col col-total col-yellow sticky-last-col text-bold" data-sticky-idx="1">${formatSeconds(iss.total)}</td>`;
             currentDates.forEach(d => {
                 const sec = iss.daily[d];
                 columnTotals[d] += sec;
@@ -321,13 +323,13 @@ function renderHTML() {
         Object.keys(types).sort().forEach(key => {
             const typ = types[key];
             html += `<tr>`;
-            html += `<td class="sticky-col col-auto bg-white col-tipo-cell" data-sticky-idx="0">
+            html += `<td class="sticky-col col-auto bg-white col-tipo-cell text-bold" data-sticky-idx="0">
                 <div class="flex-align">
                     <img src="${typ.icon}" onerror="this.style.display='none'"> 
-                    <span>${key}</span>
+                    <span class="text-content" title="${key}">${key}</span>
                 </div>
             </td>`;
-            html += `<td class="sticky-col col-total col-yellow sticky-last-col" data-sticky-idx="1">${formatSeconds(typ.total)}</td>`;
+            html += `<td class="sticky-col col-total col-yellow sticky-last-col text-bold" data-sticky-idx="1">${formatSeconds(typ.total)}</td>`;
             currentDates.forEach(d => {
                 const sec = typ.daily[d];
                 columnTotals[d] += sec;
@@ -342,13 +344,13 @@ function renderHTML() {
     html += `</tbody><tfoot><tr class="tfoot-total">`;
     
     if (activeGroups.length === 2) {
-        html += `<td class="sticky-col col-auto" data-sticky-idx="0" style="text-align:right;">Total</td>`;
+        html += `<td class="sticky-col col-auto text-bold" data-sticky-idx="0" style="text-align:right;">Total</td>`;
         html += `<td class="sticky-col col-total col-yellow" data-sticky-idx="1">${formatSeconds(grandTotal)}</td>`;
         html += `<td class="sticky-col col-auto" data-sticky-idx="2"></td>`;
-        html += `<td class="sticky-col col-total col-yellow sticky-last-col" data-sticky-idx="3">${formatSeconds(grandTotal)}</td>`;
+        html += `<td class="sticky-col col-total col-yellow sticky-last-col text-bold" data-sticky-idx="3">${formatSeconds(grandTotal)}</td>`;
     } else {
-        html += `<td class="sticky-col col-auto" data-sticky-idx="0" style="text-align:right;">Total</td>`;
-        html += `<td class="sticky-col col-total col-yellow sticky-last-col" data-sticky-idx="1">${formatSeconds(grandTotal)}</td>`;
+        html += `<td class="sticky-col col-auto text-bold" data-sticky-idx="0" style="text-align:right;">Total</td>`;
+        html += `<td class="sticky-col col-total col-yellow sticky-last-col text-bold" data-sticky-idx="1">${formatSeconds(grandTotal)}</td>`;
     }
     
     currentDates.forEach(d => {
@@ -358,7 +360,7 @@ function renderHTML() {
     html += `<td class="filler-col"></td></tr></tfoot></table></div>`;
     document.getElementById('reportContainer').innerHTML = html;
 
-    // A mágica para ajustar os `left` das colunas sticky perfeitamente após a tabela renderizar
+    // A mágica para ajustar os `left` das colunas sticky
     setTimeout(applyStickyOffsets, 50);
 }
 
