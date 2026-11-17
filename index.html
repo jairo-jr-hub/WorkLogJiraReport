@@ -64,6 +64,35 @@
         </div>
     </main>
 
+    <!-- MODAL DE DETALHES DO WORKLOG -->
+    <div id="worklogModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Worklogs</h3>
+                <span class="close-btn" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <table class="modal-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Início</th>
+                            <th>Fim (aprox.)</th>
+                            <th>Tempo</th>
+                            <th>Comentário</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modalTableBody">
+                        <!-- Preenchido via JS -->
+                    </tbody>
+                    <tfoot id="modalTableFoot">
+                        <!-- Totalizador preenchido via JS -->
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
