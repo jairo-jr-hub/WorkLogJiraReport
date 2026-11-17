@@ -161,18 +161,23 @@ function renderHTML() {
 
     let html = `<div class="table-wrapper"><table><thead>`;
     
-    // Header 1: Mês e Labels com Classes Sticky
+    // Header 1
     html += `<tr>`;
+    
+    let stickyHtml = '';
     if (activeGroups.length === 2) {
-        html += `<th rowspan="2" class="bg-white sticky-col-1 w-240">Tipo de item</th>`;
-        html += `<th rowspan="2" class="col-yellow sticky-col-2 w-100" style="text-align:left;">Total<br>Tipo de item</th>`;
-        html += `<th rowspan="2" class="bg-white sticky-col-3 w-240">Issue</th>`;
-        html += `<th rowspan="2" class="col-yellow sticky-col-4 w-100 sticky-shadow" style="text-align:left;">Total<br>Issue</th>`;
+        stickyHtml += `<th rowspan="2" class="bg-white sticky-col col-auto col-tipo-header" data-sticky-idx="0">Tipo de item</th>`;
+        stickyHtml += `<th rowspan="2" class="col-yellow sticky-col col-total" data-sticky-idx="1">Total<br>Tipo de item</th>`;
+        stickyHtml += `<th rowspan="2" class="bg-white sticky-col col-auto col-issue-header" data-sticky-idx="2">Issue</th>`;
+        stickyHtml += `<th rowspan="2" class="col-yellow sticky-col col-total sticky-last-col" data-sticky-idx="3">Total<br>Issue</th>`;
     } else if (activeGroups.length === 1) {
-        const label = activeGroups[0] === 'tipo' ? 'Tipo de item' : 'Issue';
-        html += `<th rowspan="2" class="bg-white sticky-col-1 w-240">${label}</th>`;
-        html += `<th rowspan="2" class="col-yellow sticky-col-2 w-100 sticky-shadow" style="text-align:left;">Total<br>${label}</th>`;
+        const isTipo = activeGroups[0] === 'tipo';
+        const label = isTipo ? 'Tipo de item' : 'Issue';
+        const headerClass = isTipo ? 'col-tipo-header' : 'col-issue-header';
+        stickyHtml += `<th rowspan="2" class="bg-white sticky-col col-auto ${headerClass}" data-sticky-idx="0">${label}</th>`;
+        stickyHtml += `<th rowspan="2" class="col-yellow sticky-col col-total sticky-last-col" data-sticky-idx="1">Total<br>${label}</th>`;
     }
+    html += stickyHtml;
     
     let currentMonth = "";
     let colspan = 0;
@@ -191,7 +196,7 @@ function renderHTML() {
     
     html += monthHeaders + `<th rowspan="2" class="filler-col"></th></tr><tr>`;
 
-    // Header 2: Dias da Semana
+    // Header 2 (Dias)
     currentDates.forEach(d => {
         const day = d.split('-')[2];
         const wd = getWeekdayBR(d);
@@ -232,30 +237,31 @@ function renderHTML() {
                 html += `<tr>`;
                 
                 if (idx === 0) {
-                    html += `<td rowspan="${issueKeys.length}" class="sticky-col-1 w-240 bg-white">
+                    html += `<td rowspan="${issueKeys.length}" class="sticky-col col-auto bg-white col-tipo-cell" data-sticky-idx="0">
                         <div class="flex-align">
                             <img src="${grp.icon}" onerror="this.style.display='none'"> 
-                            <span class="text-content" title="${typeName}">${typeName}</span>
+                            <span>${typeName}</span>
                         </div>
                     </td>`;
-                    html += `<td rowspan="${issueKeys.length}" class="sticky-col-2 w-100 col-yellow" style="font-weight:500;">
+                    html += `<td rowspan="${issueKeys.length}" class="sticky-col col-total col-yellow" data-sticky-idx="1">
                         ${formatSeconds(grp.total)}
                     </td>`;
                 }
                 
-                html += `<td class="sticky-col-3 w-240 bg-white col-issue">
-                    <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" class="flex-align">
-                        <img src="${grp.icon}" onerror="this.style.display='none'"> 
-                        <span class="text-content" title="${key}">${key}</span>
-                    </a>
+                html += `<td class="sticky-col col-auto bg-white col-issue-cell" data-sticky-idx="2">
+                    <div class="flex-align">
+                        <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank">
+                            <img src="${grp.icon}" onerror="this.style.display='none'"> 
+                        </a>
+                        <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank">${key}</a>
+                    </div>
                 </td>`;
-                html += `<td class="sticky-col-4 w-100 col-yellow sticky-shadow" style="font-weight:500;">${formatSeconds(iss.total)}</td>`;
+                html += `<td class="sticky-col col-total col-yellow sticky-last-col" data-sticky-idx="3">${formatSeconds(iss.total)}</td>`;
                 
                 currentDates.forEach(d => {
                     const sec = iss.daily[d];
                     columnTotals[d] += sec;
-                    const highlightClass = sec > 0 ? " has-data" : "";
-                    html += `<td class="day-col bg-white${highlightClass}">${formatSeconds(sec)}</td>`;
+                    html += `<td class="day-col bg-white">${formatSeconds(sec)}</td>`;
                 });
                 
                 html += `<td class="filler-col"></td></tr>`;
@@ -280,18 +286,19 @@ function renderHTML() {
         Object.keys(issues).sort().forEach(key => {
             const iss = issues[key];
             html += `<tr>`;
-            html += `<td class="sticky-col-1 w-240 bg-white col-issue">
-                <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank" class="flex-align">
-                    <img src="${iss.icon}" onerror="this.style.display='none'"> 
-                    <span class="text-content" title="${key}">${key}</span>
-                </a>
+            html += `<td class="sticky-col col-auto bg-white col-issue-cell" data-sticky-idx="0">
+                <div class="flex-align">
+                    <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank">
+                        <img src="${iss.icon}" onerror="this.style.display='none'"> 
+                    </a>
+                    <a href="https://guaranisistemas.atlassian.net/browse/${key}" target="_blank">${key}</a>
+                </div>
             </td>`;
-            html += `<td class="sticky-col-2 w-100 col-yellow sticky-shadow" style="font-weight:500;">${formatSeconds(iss.total)}</td>`;
+            html += `<td class="sticky-col col-total col-yellow sticky-last-col" data-sticky-idx="1">${formatSeconds(iss.total)}</td>`;
             currentDates.forEach(d => {
                 const sec = iss.daily[d];
                 columnTotals[d] += sec;
-                const highlightClass = sec > 0 ? " has-data" : "";
-                html += `<td class="day-col bg-white${highlightClass}">${formatSeconds(sec)}</td>`;
+                html += `<td class="day-col bg-white">${formatSeconds(sec)}</td>`;
             });
             html += `<td class="filler-col"></td></tr>`;
             grandTotal += iss.total;
@@ -314,18 +321,17 @@ function renderHTML() {
         Object.keys(types).sort().forEach(key => {
             const typ = types[key];
             html += `<tr>`;
-            html += `<td class="sticky-col-1 w-240 bg-white col-issue-type">
+            html += `<td class="sticky-col col-auto bg-white col-tipo-cell" data-sticky-idx="0">
                 <div class="flex-align">
                     <img src="${typ.icon}" onerror="this.style.display='none'"> 
-                    <span class="text-content" title="${key}">${key}</span>
+                    <span>${key}</span>
                 </div>
             </td>`;
-            html += `<td class="sticky-col-2 w-100 col-yellow sticky-shadow" style="font-weight:500;">${formatSeconds(typ.total)}</td>`;
+            html += `<td class="sticky-col col-total col-yellow sticky-last-col" data-sticky-idx="1">${formatSeconds(typ.total)}</td>`;
             currentDates.forEach(d => {
                 const sec = typ.daily[d];
                 columnTotals[d] += sec;
-                const highlightClass = sec > 0 ? " has-data" : "";
-                html += `<td class="day-col bg-white${highlightClass}">${formatSeconds(sec)}</td>`;
+                html += `<td class="day-col bg-white">${formatSeconds(sec)}</td>`;
             });
             html += `<td class="filler-col"></td></tr>`;
             grandTotal += typ.total;
@@ -336,13 +342,13 @@ function renderHTML() {
     html += `</tbody><tfoot><tr class="tfoot-total">`;
     
     if (activeGroups.length === 2) {
-        html += `<td class="sticky-col-1 w-240" style="text-align:right;">Total</td>`;
-        html += `<td class="sticky-col-2 w-100 col-yellow">${formatSeconds(grandTotal)}</td>`;
-        html += `<td class="sticky-col-3 w-240"></td>`;
-        html += `<td class="sticky-col-4 w-100 col-yellow sticky-shadow">${formatSeconds(grandTotal)}</td>`;
+        html += `<td class="sticky-col col-auto" data-sticky-idx="0" style="text-align:right;">Total</td>`;
+        html += `<td class="sticky-col col-total col-yellow" data-sticky-idx="1">${formatSeconds(grandTotal)}</td>`;
+        html += `<td class="sticky-col col-auto" data-sticky-idx="2"></td>`;
+        html += `<td class="sticky-col col-total col-yellow sticky-last-col" data-sticky-idx="3">${formatSeconds(grandTotal)}</td>`;
     } else {
-        html += `<td class="sticky-col-1 w-240" style="text-align:right;">Total</td>`;
-        html += `<td class="sticky-col-2 w-100 col-yellow sticky-shadow">${formatSeconds(grandTotal)}</td>`;
+        html += `<td class="sticky-col col-auto" data-sticky-idx="0" style="text-align:right;">Total</td>`;
+        html += `<td class="sticky-col col-total col-yellow sticky-last-col" data-sticky-idx="1">${formatSeconds(grandTotal)}</td>`;
     }
     
     currentDates.forEach(d => {
@@ -351,6 +357,32 @@ function renderHTML() {
     
     html += `<td class="filler-col"></td></tr></tfoot></table></div>`;
     document.getElementById('reportContainer').innerHTML = html;
+
+    // A mágica para ajustar os `left` das colunas sticky perfeitamente após a tabela renderizar
+    setTimeout(applyStickyOffsets, 50);
+}
+
+function applyStickyOffsets() {
+    const table = document.querySelector('.table-wrapper table');
+    if (!table) return;
+
+    const firstRow = table.querySelector('thead tr:first-child');
+    if (!firstRow) return;
+
+    const numStickyCols = activeGroups.length * 2;
+    let currentLeft = 0;
+
+    for (let i = 0; i < numStickyCols; i++) {
+        const th = firstRow.querySelector(`th[data-sticky-idx="${i}"]`);
+        if (th) {
+            const width = th.getBoundingClientRect().width;
+            const cells = table.querySelectorAll(`[data-sticky-idx="${i}"]`);
+            cells.forEach(cell => {
+                cell.style.left = `${currentLeft}px`;
+            });
+            currentLeft += width;
+        }
+    }
 }
 
 function formatSeconds(sec) {
